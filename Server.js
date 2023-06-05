@@ -1,18 +1,18 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require('dotenv');
-const useRoutes = require("./routes/index");
+const useRoutes = require("./src/routes/index");
 
 dotenv.config();
 
-const connectMongo = async (app) => {
-  const PORT = process.env.PORT | 5000;
+const PORT = process.env.PORT | 5000;
+
+const connectMongo = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URL);
     console.log("Mongodb Connected...");
-    app.listen(PORT, () => console.log("Server running on port " + PORT));
   } catch (e) {
-    console.error("Mongodb connect error - ", err);
+    console.error("Mongodb connect error - ", e);
   }
 }
 
@@ -36,6 +36,8 @@ const run = async () => {
   setBasicHeaders(app);
   app.use(express.json());
   useRoutes(app);
+
+  app.listen(PORT, () => console.log("Server running on port " + PORT));
 };
 
 run();
