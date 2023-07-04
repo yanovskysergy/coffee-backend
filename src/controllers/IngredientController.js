@@ -1,6 +1,7 @@
 const IngredientModel = require("../models/IngredientModel");
 const ProductModel = require("../models/ProductModel");
 const { sendBasicError } = require("../helpers/helpers");
+const { INGREDIENT_IS_USED_IN_PRODUCT } = require("../contants");
 
 module.exports.getIngredient = async (_, res) => {
   try {
@@ -35,6 +36,20 @@ module.exports.updateIngredient = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, unit } = req.body;
+
+    const products = await ProductModel.find();
+    const dependentProducts = products
+      .filter(({ ingredient }) => !!ingredient.find(({ _id }) => _id.equals(id)))
+
+    if (dependentProducts.length) {
+      res.status(405).json({
+        message: `Ingredient wasn't edited cause ingredient with id ${id} uses in one or a few products`,
+        dependentProducts,
+        errorKey: INGREDIENT_IS_USED_IN_PRODUCT
+      });
+      return;
+    }
+
     const ingredient = await IngredientModel.findByIdAndUpdate(
       id,
       {
@@ -54,14 +69,14 @@ module.exports.deleteIngredient = async (req, res) => {
     const { id } = req.params;
 
     const products = await ProductModel.find();
-    const dependentProductIds = products
+    const dependentProducts = products
       .filter(({ ingredient }) => !!ingredient.find(({ _id }) => _id.equals(id)))
-      .map(({ _id }) => ({ _id }));
 
-    if (dependentProductIds.length) {
+    if (dependentProducts.length) {
       res.status(405).json({
         message: `Ingredient wasn't deleted cause ingredient with id ${id} uses in one or a few products`,
-        dependentProductIds
+        dependentProducts,
+        errorKey: INGREDIENT_IS_USED_IN_PRODUCT
       });
       return;
     }
